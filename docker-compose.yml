@@ -1,0 +1,105 @@
+version: '3.7'
+
+services:
+
+  front:
+    image: ghcr.io/mailu/nginx:${VERSION}
+    restart: always
+    env_file: .env
+    ports:
+      - "${BIND_ADDRESS4}:80:80"
+      - "${BIND_ADDRESS4}:443:443"
+      - "${BIND_ADDRESS4}:25:25"
+      - "${BIND_ADDRESS4}:465:465"
+      - "${BIND_ADDRESS4}:587:587"
+      - "${BIND_ADDRESS4}:110:110"
+      - "${BIND_ADDRESS4}:143:143"
+      - "${BIND_ADDRESS4}:993:993"
+      - "${BIND_ADDRESS4}:995:995"
+    volumes:
+      - "${ROOT}/certs:/certs"
+      - "${ROOT}/overrides/nginx:/overrides:ro"
+    depends_on:
+      - resolver
+    networks:
+      - default
+
+  resolver:
+    image: ghcr.io/mailu/unbound:${VERSION}
+    env_file: .env
+    restart: always
+    networks:
+      default:
+        ipv4_address: 192.168.203.254
+
+  admin:
+    image: ghcr.io/mailu/admin:${VERSION}
+    restart: always
+    env_file: .env
+    dns:
+      - 8.8.8.8
+      - 192.168.203.254
+    volumes:
+      - "${ROOT}/data:/data"
+      - "${ROOT}/dkim:/dkim"
+    depends_on:
+      - redis
+      - resolver
+
+  imap:
+    image: ghcr.io/mailu/dovecot:${VERSION}
+    restart: always
+    env_file: .env
+    volumes:
+      - "${ROOT}/mail:/mail"
+      - "${ROOT}/overrides/dovecot:/overrides:ro"
+    depends_on:
+      - front
+      - resolver
+
+  smtp:
+    image: ghcr.io/mailu/postfix:${VERSION}
+    restart: always
+    env_file: .env
+    volumes:
+      - "${ROOT}/mailqueue:/queue"
+      - "${ROOT}/overrides/postfix:/overrides:ro"
+    depends_on:
+      - front
+      - resolver
+
+  antispam:
+    image: ghcr.io/mailu/rspamd:${VERSION}
+    restart: always
+    env_file: .env
+    volumes:
+      - "${ROOT}/filter:/var/lib/rspamd"
+      - "${ROOT}/dkim:/dkim"
+      - "${ROOT}/overrides/rspamd:/etc/rspamd/override.d:ro"
+    depends_on:
+      - front
+      - resolver
+
+  webmail:
+    image: ghcr.io/mailu/roundcube:${VERSION}
+    restart: always
+    env_file: .env
+    volumes:
+      - "${ROOT}/webmail:/data"
+      - "${ROOT}/overrides/roundcube:/overrides:ro"
+    depends_on:
+      - imap
+
+  redis:
+    image: redis:alpine
+    restart: always
+    volumes:
+      - "${ROOT}/redis:/data"
+
+networks:
+  default:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: ${SUBNET}
