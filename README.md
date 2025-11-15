@@ -401,8 +401,6 @@ Project ini menggunakan lisensi MIT - lihat file LICENSE untuk detail.
 ## 👤 Author
 
 **Riyadh**
-- Domain: madaka.my.id
-
 ## ⚠️ Important Notes
 
 - **Port 25** harus terbuka untuk menerima email dari server lain
@@ -412,8 +410,3 @@ Project ini menggunakan lisensi MIT - lihat file LICENSE untuk detail.
 - **Monitor** logs untuk mendeteksi masalah lebih awal
 - **Update** Mailu secara berkala untuk security patches
 
-## 🎉 Credits
-
-- Mailu Team untuk mail server yang awesome
-- Roundcube Team untuk webmail client
-- Docker Team untuk containerization platform
